@@ -24,10 +24,17 @@
 
 #include "HX711.h"
 
-#define calibration_factor -7050.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
+#define calibration_factor -26000.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
 
 #define DOUT  3
 #define CLK  2
+
+const byte avg_len = 10;
+unsigned long counter;
+float last10[avg_len];
+float avg;
+float sum;
+float delta;
 
 HX711 scale;
 
@@ -43,8 +50,17 @@ void setup() {
 }
 
 void loop() {
+  last10[counter % avg_len] = scale.get_units();
+  sum = 0;
+  for (int i = 0; i < avg_len; i++) {
+    sum += last10[i];
+  }
+  delta = avg - (sum / avg_len);
+  avg = sum / avg_len;
+  
   Serial.print("Reading: ");
-  Serial.print(scale.get_units(), 1); //scale.get_units() returns a float
-  Serial.print(" lbs"); //You can change this to kg but you'll need to refactor the calibration_factor
+  Serial.print(avg, 4); //scale.get_units() returns a float
+  Serial.print(" kg"); //You can change this to kg but you'll need to refactor the calibration_factor
+  Serial.print("\t\t\t\t\t\t Delta was: "); Serial.print(delta, 5);
   Serial.println();
 }
