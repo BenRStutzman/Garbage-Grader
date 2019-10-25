@@ -24,7 +24,7 @@
 
 #include "HX711.h"
 
-#define calibration_factor -26000.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
+#define calibration_factor -23000.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
 
 #define DOUT  3
 #define CLK  2
@@ -39,7 +39,7 @@ float avg;
 float sum;
 float delta;
 int dump_time = 500;
-float sensitivity = 0.01;
+float sensitivity = 0.02;
 int start_delay = 30000;
 unsigned long last_trigger;
 float item_weight;
@@ -103,7 +103,7 @@ void loop() {
   Serial.print("\tMoving avg: ");
   Serial.print(avg, 4); //scale.get_units() returns a float
   Serial.print(" kg"); //You can change this to kg but you'll need to refactor the calibration_factor
-  Serial.print("Delta: ");
+  Serial.print("\tDelta: ");
   if (delta > 0) { Serial.print(" "); }
   Serial.print(delta * 1000, 1); Serial.print(" g");
   Serial.println();
