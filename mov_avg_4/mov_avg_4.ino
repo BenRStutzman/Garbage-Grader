@@ -119,12 +119,14 @@ void loop() {
   detect_food();
   measure_weight();
 
+  /*
   if (counter % 50 == 0 && not find_weight) {
     Serial.print("total weight: "), Serial.print(avg); Serial.print(" kg");
     Serial.println();
   }
+  */
   
-  /*
+  
   //Stuff To print for diagnosis
   Serial.print("Reading: ");
   if (reading > 0) { Serial.print(" "); }
@@ -136,7 +138,7 @@ void loop() {
   if (delta > 0) { Serial.print(" "); }
   Serial.print(delta * 1000, 1); Serial.print(" g");
   Serial.println();
-  */
+  
 
   last_readings[counter % num_readings] = reading;
   last_avgs[counter % num_avgs] = avg;
