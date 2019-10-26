@@ -134,7 +134,7 @@ void loop() {
   now_time = millis();
   if (now_time - then_time > 500 & now_time % 1000 < 500) {
     then_time = now_time;
-    Serial.print(float(int(now_time / 1000)) / 3600, 4); Serial.print(",");
+    Serial.print(float((unsigned long)(now_time / 1000)) / 3600, 4); Serial.print(",");
     //Serial.print("Reading: ");
     //if (reading > 0) { Serial.print(" "); }
     Serial.print(reading, 4); Serial.print(","); //Serial.print(" kg");
