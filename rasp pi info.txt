@@ -1,0 +1,7 @@
+MAC address: b8:27:eb:1c:0c:8c
+IP address (on EMU-iot): 10.6.29.111
+
+username: pi
+password: woklidean
+
+EMU-iot password: 2ChikinAgain
