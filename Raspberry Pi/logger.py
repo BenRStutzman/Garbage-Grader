@@ -1,0 +1,147 @@
+from PIL import Image
+import os
+import serial
+import datetime
+import time
+
+photostream = "/home/pi/GarbageGrader/Data/photostream"
+composites = "/home/pi/GarbageGrader/Data/composites"
+log = "/home/pi/GarbageGrader/Data/log.csv"
+
+def save_composite(ident = 0, num_tiles = 4, inp_folder = photostream,
+                    out_folder = composites):
+
+    buffer = []
+    for file in os.scandir(inp_folder):
+        if file.path[-1] != '~': # make sure it's not a hidden file
+            buffer.append(file.path)
+
+    paths = sorted(buffer, key = lambda path: int(path[len(inp_folder) + 1 : -4]),
+                   reverse = True)
+    pictures = []
+    pic_num = 0
+    while len(pictures) < num_tiles:
+        try:
+            pictures.append(Image.open(paths[pic_num]))
+        except FileNotFoundError:
+            continue
+        finally:
+            pic_num += 1
+
+
+    # following 10ish lines are from glombard on github:
+    # https://gist.github.com/glombard/7cd166e311992a828675
+    
+    composite = Image.new("RGB", (5184, 3888))
+
+    for index, picture in enumerate(reversed(pictures)):
+      #picture.thumbnail((2592, 900), Image.ANTIALIAS)
+      x = index % 2 * 2592
+      y = index // 2 * 1944
+      w, h = picture .size
+      #print('pos {0},{1} size {2},{3}'.format(x, y, w, h))
+      composite.paste(picture, (x, y, x + w, y + h))
+
+    composite.save(os.path.expanduser('%s/%06d.jpg' % (out_folder, ident)))
+    composite.close()
+
+def nice_date_time(year, month, day, hour, minute, second):
+    return str.format("%d-%.2d-%.2d %.2d:%.2d:%.2d" % (year, month, day, hour,
+                                                        minute, second))
+
+def record_events(photo_folder, comp_folder, log, on_hours,
+                  prev_id):
+
+    ser = serial.Serial('/dev/ttyACM0', 9600)
+    ser.close() 
+
+    day = False
+
+    ident = prev_id
+    while True:
+        now = datetime.datetime.now()
+        hours = now.hour + now.minute / 60
+        if on_hours[0] < hours < on_hours[1]:
+            if not day:
+                day = True
+                ser.open()
+                ser.reset_input_buffer()
+                print("\nWaking up...")
+                ard_output = ser.readline().decode('utf-8').strip() 
+                print("\nTime                  ID       Action           "
+                  "Weight (kg)   Weight (g)")
+            else:
+                ard_output = ser.readline().decode('utf-8').strip()
+            if ard_output[0].isalpha():
+                action = ard_output
+                if action in ['food added', 'bin removed', 'scale reset']:
+                    ident += 1
+                    save_composite(ident = ident)
+                now = datetime.datetime.now()
+            elif action:
+                if action in ['food added', 'bin removed', 'scale reset']:
+                    to_save, to_print = formatter(now, action, ard_output, ident)
+                else:
+                    to_save, to_print = formatter(now, action, ard_output)
+                log.write(to_save)
+                log.flush()
+                print(to_print)                
+                action = ''
+        else:
+            if day:
+                day = False
+                ser.close()
+                if action in ['food added', 'bin removed', 'scale reset']:
+                    os.system("rm %s/%06d.jpg" % (comp_folder, ident))
+                    ident -= 1
+                action = ''
+                print("\nGoing to sleep...")
+            time.sleep(60)
+
+def formatter(now, action, weight, ident = -1):
+    info = nice_date_time(now.year, now.month, now.day,
+                          now.hour, now.minute, now.second)
+    if action == 'food added':
+        weight1, weight2 = "", weight
+    else:
+        weight1, weight2 = weight, ""
+    if ident == -1:
+        id_str = ""
+    else:
+        id_str = str.format("%06d" % ident)
+    to_save = str.format("%s,%s,%s,%s,%s\n" %
+                         (info, id_str, action, weight1, weight2))
+    to_print = str.format("%s   %6s   %s   %s       %s" %
+                         (info, id_str, str.ljust(action, 14),
+                          str.ljust(weight1, 7), weight2))
+    return to_save, to_print
+
+def log_pics_and_weights(in_folder = photostream, out_folder = composites,
+                         clear_logs = False, path = log,
+                         on_hours = [6.5, 21.5]):
+
+    header = "Time,ID,Action,Weight (kg),Weight (g)"
+    if clear_logs:
+        starting_id = 0
+        os.system("rm -r %s/*" % out_folder)
+        f = open(path, 'w')
+        f.write(header + '\n')
+    else:
+        max_id = -1
+        f = open(path, 'r')
+        lines = f.readlines()
+        if len(lines) > 1:
+            for line in reversed(lines):
+                if line.split(',')[1]:
+                    prev_id = int(line.split(',')[1])
+                    break
+        else:
+            prev_id = -1
+    f.close()
+
+    f = open(path, 'a')
+    
+    record_events(in_folder, out_folder, f, on_hours, prev_id)
+
+log_pics_and_weights(clear_logs = False)
+
