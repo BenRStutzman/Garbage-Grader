@@ -7,7 +7,7 @@ import time
 
 photostream = "/home/pi/GarbageGrader/Data/photostream"
 
-def stream_photos(folder = photostream, filename = "", shutter = 10000,
+def stream_photos(folder = photostream, filename = "", shutter = 5000,
                   ISO = None, brightness = None, contrast = None,
                   on_hours = [6, 21]):
 

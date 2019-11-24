@@ -32,15 +32,15 @@ def save_composite(ident, out_folder, num_tiles = 4, inp_folder = photostream):
     # following 10ish lines are from glombard on github:
     # https://gist.github.com/glombard/7cd166e311992a828675
     
-    composite = Image.new("RGB", (5184, 3888))
+    composite = Image.new("RGB", (3200, 3200))
 
     for index, picture in enumerate(reversed(pictures)):
-      #picture.thumbnail((2592, 900), Image.ANTIALIAS)
-      x = index % 2 * 2592
-      y = index // 2 * 1944
-      w, h = picture .size
-      #print('pos {0},{1} size {2},{3}'.format(x, y, w, h))
-      composite.paste(picture, (x, y, x + w, y + h))
+        
+        x = index % 2 * 1600
+        y = index // 2 * 1600
+      
+        composite.paste(picture.crop((466, 0, 2066, 1600)),
+                                    (x, y, x + 1600, y + 1600))
 
     composite.save(os.path.expanduser('%s/%06d.jpg' % (out_folder, ident)))
     composite.close()
