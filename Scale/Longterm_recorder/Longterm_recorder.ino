@@ -99,9 +99,9 @@ void setup() {
   scale.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
   //scale.tare(); //Assuming there is no weight on the scale at start up, reset the scale to 0
 
-  //Serial.println("Initializing...");
+  Serial.println("Initializing...");
   for(int i = 0; i < 80; i++) {
-    //Serial.print("|");
+    Serial.print("|");
     scale.get_units();
     delay(start_delay / 80);
   }
@@ -117,20 +117,21 @@ void setup() {
 }
 
 void loop() {
-  
+
   take_reading();
   detect_food();
   measure_weight();
-
-  /*
+/*
   if (counter % 50 == 0 && not find_weight) {
     Serial.print("total weight: "), Serial.print(avg); Serial.print(" kg");
     Serial.println();
   }
   */
-  
+  Serial.print(avg, 4); Serial.print("\t");
+  Serial.println(delta, 4);
   
   //Stuff To print for diagnosis
+  /*
   now_time = millis();
   if (now_time - then_time > 500 & now_time % 1000 < 500) {
     then_time = now_time;
@@ -146,8 +147,8 @@ void loop() {
     Serial.print(delta * 1000, 1); //Serial.print(" g");
     Serial.println();
   }
+  */
   
-
   last_readings[counter % num_readings] = reading;
   last_avgs[counter % num_avgs] = avg;
   counter++;  
