@@ -14,7 +14,7 @@ const byte check_freq = 5; //in minutes
 
 boolean bin_removed;
 boolean find_weight;
-long check_interval = check_freq * 59545;
+long check_interval = check_freq * 60000;
 unsigned long counter;
 unsigned long last_trigger;
 unsigned long last_check;

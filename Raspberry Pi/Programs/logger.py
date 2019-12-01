@@ -94,7 +94,8 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                 day = False
                 if action in ['food added', 'bin removed', 'scale reset']:
                     out_folder = food_folder if action == 'food added' else other_folder
-                    os.system("rm %s/%06d.jpg" % (out_folder, ident))
+                    pic_path = str.format('%s/%06d.jpg' % (out_folder, ident))
+                    os.remove(pic_path)
                     ident -= 1
                 action = ''
                 print("\nGoing to sleep...")
@@ -129,19 +130,22 @@ def log_pics_and_weights(clear_logs, in_folder = photostream,
             print("Canceling...")
             return
         prev_id = -1
-        os.system("rm -r %s/*" % food_folder)
-        os.system("rm -r %s/*" % other_folder)
+        for pic in os.scandir(food_folder):
+            os.remove(pic)
+        for pic in os.scandir(other_folder):
+            os.remove(pic)
         f = open(path, 'w')
         f.write(header + '\n')
     else:
         max_id = -1
         f = open(path, 'r')
         lines = f.readlines()
-        if len(lines) > 1:
-            for line in reversed(lines):
-                if line.split(',')[1]:
-                    prev_id = int(line.split(',')[1])
-                    break
+        for line in reversed(lines):
+            try:
+                prev_id = int(line.split(',')[1])
+                break
+            except ValueError:
+                continue
         else:
             prev_id = -1
     f.close()
