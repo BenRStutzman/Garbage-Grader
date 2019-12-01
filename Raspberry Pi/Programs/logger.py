@@ -3,11 +3,13 @@ import os
 import serial
 import datetime
 import time
+import sys
 
 photostream = "/home/pi/GarbageGrader/Data/photostream"
 food_folder = "/home/pi/GarbageGrader/Data/composites/food"
 other_folder = "/home/pi/GarbageGrader/Data/composites/other"
 log = "/home/pi/GarbageGrader/Data/log.csv"
+on_hours = [6, 21]
 
 def save_composite(ident, out_folder, num_tiles = 4, inp_folder = photostream):
 
@@ -53,9 +55,8 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                   prev_id):
 
     ser = serial.Serial('/dev/ttyACM0', 9600)
-    ser.close() 
-
-    day = False
+    action = ''
+    day = True
 
     ident = prev_id
     while True:
@@ -64,8 +65,8 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
         if on_hours[0] < hours < on_hours[1]:
             if not day:
                 day = True
-                ser.open()
                 ser.reset_input_buffer()
+                ser.write(bytes('reset scale 1', 'utf-8'))
                 print("\nWaking up...")
                 ard_output = ser.readline().decode('utf-8').strip() 
                 print("\nTime                  ID       Action           "
@@ -91,7 +92,6 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
         else:
             if day:
                 day = False
-                ser.close()
                 if action in ['food added', 'bin removed', 'scale reset']:
                     out_folder = food_folder if action == 'food added' else other_folder
                     os.system("rm %s/%06d.jpg" % (out_folder, ident))
@@ -118,12 +118,16 @@ def formatter(now, action, weight, ident = -1):
                           weight1, weight2))
     return to_save, to_print
 
-def log_pics_and_weights(in_folder = photostream, food_folder = food_folder,
-                         other_folder = other_folder, clear_logs = False,
-                         path = log, on_hours = [6, 21]):
+def log_pics_and_weights(clear_logs, in_folder = photostream,
+                         food_folder = food_folder, other_folder = other_folder,
+                         path = log, on_hours = on_hours):
 
     header = "Time,ID,Action,Weight (kg),Weight (g)"
     if clear_logs:
+        if input("Are you sure you want to clear the log and delete all pictures"
+                 " (y/n)? ") != 'y':
+            print("Canceling...")
+            return
         prev_id = -1
         os.system("rm -r %s/*" % food_folder)
         os.system("rm -r %s/*" % other_folder)
@@ -146,5 +150,11 @@ def log_pics_and_weights(in_folder = photostream, food_folder = food_folder,
     
     record_events(in_folder, food_folder, other_folder, f, on_hours, prev_id)
 
-log_pics_and_weights(clear_logs = False)
+
+if len(sys.argv) > 1 and sys.argv[1] == 'clear':
+    clear_logs = True
+else:
+    clear_logs = False
+
+log_pics_and_weights(clear_logs)
 

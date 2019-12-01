@@ -8,14 +8,16 @@ const byte num_readings = 20;
 const byte num_avgs = 20;
 const int start_delay = 300; //in cycles, which are about 0.1 seconds
 const int dump_time = 500; //in ms
-const int check_freq = 3281; //in cycles, 3281 is about five minutes
-const float sensitivity = 0.015;
+const float sensitivity = 0.020; //in kg, the lightest weight it will detect
 const float bin_weight = 3;
+const byte check_freq = 5; //in minutes
 
 boolean bin_removed;
 boolean find_weight;
+long check_interval = check_freq * 59545;
 unsigned long counter;
 unsigned long last_trigger;
+unsigned long last_check;
 float last_readings[num_readings];
 float last_avgs[num_avgs];
 float reading;
@@ -66,7 +68,7 @@ void reset_scale() {
   for(int i = 0; i < start_delay; i++) { scale.get_units(); }
   if (bin_removed) {
     float amount_removed = max_weight[0] - scale.get_units();
-    if (amount_removed < sensitivity) { Serial.println(0, 3); }
+    if (amount_removed < 1) { Serial.println(0, 3); }
     else { Serial.println(amount_removed, 3); }
   }
   scale.tare();
@@ -93,7 +95,7 @@ void reset_readings() {
   
 }
 
-void detect_reset() {
+void detect_removal() {
   if (avg < -bin_weight / 2 && !find_weight) {
     //if (find_weight) { Serial.println("0.00"); }
     Serial.println("bin removed");
@@ -122,6 +124,22 @@ void detect_reset() {
   }
 }
 
+void occasional_checks() {
+  // stuff to check every check_freq minutes
+  if (millis() - last_check >= check_interval) {
+    Serial.println("weight checked");
+    Serial.println(avg, 3);
+    last_check += check_interval;
+    max_weight[0] = max_weight[1];
+    max_weight[1] = avg;
+    //String input = Serial.readString();
+    //Serial.println(input);
+    if (Serial.readString() == "reset scale 1") {
+      reset_scale();
+    }
+  }
+}
+
 void setup() {
   Serial.begin(9600);
 
@@ -133,17 +151,17 @@ void setup() {
 
 void loop() {
 
-  detect_reset();
+  occasional_checks();
+  detect_removal();
   take_reading();
   detect_food();
   measure_weight();
+
+  last_readings[counter % num_readings] = reading;
+  last_avgs[counter % num_avgs] = avg;
+  counter++;
+  
   //Serial.println(avg, 3);
-  if (counter % check_freq == 0) {
-    Serial.println("weight checked");
-    Serial.println(avg, 3);
-    max_weight[0] = max_weight[1];
-    max_weight[1] = avg;
-  }
 
   /*
   //Stuff To print for diagnosis
@@ -158,10 +176,6 @@ void loop() {
   Serial.print(delta * 1000, 1); Serial.print(" g");
   Serial.println();
   */
-  
-  last_readings[counter % num_readings] = reading;
-  last_avgs[counter % num_avgs] = avg;
-  counter++;
   
   
 }
