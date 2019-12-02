@@ -56,7 +56,10 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
 
     ser = serial.Serial('/dev/ttyACM0', 9600)
     action = ''
+    saved_action = ''
     day = True
+    print("\nTime                  ID       Action           "
+                  "Weight (kg)   Weight (g)")
 
     ident = prev_id
     while True:
@@ -74,6 +77,9 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
             else:
                 ard_output = ser.readline().decode('utf-8').strip()
             if ard_output[0].isalpha():
+                if action in ['food added', 'bin removed', 'scale reset']:
+                    saved_action = action
+                    saved_now = now
                 action = ard_output
                 if action in ['food added', 'bin removed', 'scale reset']:
                     ident += 1
@@ -85,10 +91,18 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                     to_save, to_print = formatter(now, action, ard_output, ident)
                 else:
                     to_save, to_print = formatter(now, action, ard_output)
+                action = ''
                 log.write(to_save)
                 log.flush()
-                print(to_print)                
-                action = ''
+                print(to_print)
+            elif saved_action:
+                to_save, to_print = formatter(saved_now, saved_action, ard_output, ident - 1)
+                saved_action = ''
+                log.write(to_save)
+                log.flush()
+                print(to_print)
+            else:
+                print('There was no action or saved action, but I got a number.')
         else:
             if day:
                 day = False
