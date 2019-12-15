@@ -1,18 +1,17 @@
 #----------------------------------------------------------------------#
 # Importing packages
 
-import csv, random, sys, os
-from PIL import Image
+import csv, random, sys, os, shutil, time
 
 #----------------------------------------------------------------------#
 # Convenience Methods
 
 # Code that can be run by entering n as a parameter on commandline
-def setup_csv(suffix,size):
+def setup_csv(folder_name, grades_file):
     index = []
-    for i in range(size):
-        index.append([i])
-    write_csv("grades\\" + str(suffix), index)
+    for pic in os.scandir(folder_name):                  # since pic numbers won't necessarily start at 0 and be consecutive.
+        index.append([int(pic.name.split('.')[0])])
+    write_csv(grades_file, index)
 
 # code that writes a 2-d dictionary to a csv file
 def write_csv(fp,data):
@@ -20,47 +19,95 @@ def write_csv(fp,data):
         writer = csv.writer(file)
         writer.writerows(data)
 
+# find the name of the folder full of pictures (assuming it's the only folder in the current directory)
+def find_folder_name():
+    for item in os.scandir():
+        if item.is_dir() and item.name != '__pycache__':
+            return item.name
+    else:
+        return False
+
+if __name__ == '__main__':     #so you can import the above functions without running all this
+
 #----------------------------------------------------------------------#
 # Variable declarations
 
-pic_list = []
-params = sys.argv
+    pic_list = []
+    params = sys.argv
 
 #----------------------------------------------------------------------#
 # Main function
 
-# checks to see if csv needs setup
-try:
-    if (params[1] == 'n'):
-        setup_csv(input("What should the filename be?\n"),input("How many rows?\n"))
-except:
-    pass
+    folder_name = find_folder_name()
+    if not folder_name:
+        print('Make sure the folder of pictures to grade is in this directory')
+        raise Exception
+
+    grades_file = folder_name + "_grades" #automatic name for the grades csv
+
+    # checks to see if csv needs setup
+    if len(params) > 1 and params[1] == 'n':
+        if input('Are you sure you want to overwrite the grades file (y/n)? ') == 'y':
+            setup_csv(folder_name, grades_file)
+            print('erasing current grades file...')
+            time.sleep(1)
+        else:
+            print('keeping current grades file...')
+            time.sleep(1)
 
 
-# This is creating a list of the rows of the csv for ease of reading and writing without constantly reading and writing to the file.
-with open(r'.\grades\1123-1201') as csv_file:
+    # This is creating a list of the rows of the csv for ease of reading and writing without constantly reading and writing to the file.
+    try:
+        csv_file = open(grades_file)
+    except FileNotFoundError:
+        setup_csv(folder_name, grades_file)
+        csv_file = open(grades_file)
     csv_reader = csv.reader(csv_file, delimiter=',')
     line_count = 0
     for row in csv_reader:
         pic_list.append(row)
+    csv_file.close()
 
+    pics_to_grade = len([pic for pic in pic_list if len(pic) == 1]) # checks how many pictures have not yet been graded
 
-# This sets up the random sample with no repeats of the picture that we want to pull from all numbers will have 1 added as the 0th picture doesn't matter in this case, and the last picture does.
-sample = random.sample(range(1227),1227)
+    if pics_to_grade:
+        print('You have %d pictures left to grade in this set.' % pics_to_grade)
+        time.sleep(1)
 
-# Iterating through each of the pictures in the list. Pulls up the picture and then takes in the grade of commandline. Can break out with Ctrl c.
-for id in sample:
-    try:
-        id_str = format(id, '06d')
-        file_path = "start ..\\..\\Data\\11-23_to_12-1\\composites\\food\\" + id_str + ".jpg"
-        os.system(file_path)
+        print('Drag the picture-viewing window to a convenient place, then press enter to begin grading.')
+        shutil.copy('placeholder.jpg', 'current_pic.jpg')
+        os.system('start current_pic.jpg')  # opens current_pic.jpg in the default photo viewer
+        input()                             # waits for user to press enter
 
-        grade = input("What grade would you give the picture " + id_str + "?\n")
+        # This sets up the random sample with no repeats of the picture that we want to pull from all numbers will have 1 added as the 0th picture doesn't matter in this case, and the last picture does.
+        sample = random.sample(range(len(pic_list)),len(pic_list))
 
-        pic_list[id].append(grade)
-    except Exception as e:
-        break
+        # Iterating through each of the pictures in the list. Copies the pictures into current_pic.jpg and then takes in the grade of commandline. Can break out with Ctrl c.
+        for i in sample:
+            id = int(pic_list[i][0])
+            if len(pic_list[i]) == 1: #if it still needs a grade
+                try:
+                    id_str = format(id, '06d')
 
+                    file_path = folder_name + '\\' + id_str + '.jpg'
+                    shutil.copy(file_path, 'current_pic.jpg') #copy the picture into current_pic.jpg, which is already pulled up in the default photo viewer
 
-# writes to the csv file
-write_csv(r'.\grades\1123-1201',pic_list)
+                    grade = input("What grade would you give this picture (%s.jpg)?\n" % id_str).strip().upper()
+
+                    pic_list[i].append(grade)
+                except Exception as e:
+                    print(e)
+                    print("Make sure you aren't grading too quickly...") # the try sometimes throws an error if I grade really fast
+                    write_csv(grades_file, pic_list)
+                    print('\nExiting grader, progress saved.')
+                    break
+                except KeyboardInterrupt:
+                    write_csv(grades_file, pic_list)                    # allows you to grade only part of a set, then come back later and finish.
+                    print('\nExiting grader, progress saved.')
+                    break
+        else:
+            # writes to the csv file
+            write_csv(grades_file, pic_list)
+            print('\nDone grading! All grades have been saved in the "%s" file.' % grades_file)
+    else:
+        print('There are no pictures left to grade in this set.')
