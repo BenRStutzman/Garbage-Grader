@@ -6,4 +6,4 @@ Project with Austin Engle for Senior Design.
 
 ![alt text](https://raw.githubusercontent.com/BenRStutzman/garbage-grader/master/Pictures/poster.png)
 
-![alt text](https://raw.githubusercontent.com/BenRStutzman/garbage-grader/master/Pictures/"Example recording 3.png")
+![alt text](https://raw.githubusercontent.com/BenRStutzman/garbage-grader/master/Pictures/example_recording.png)
