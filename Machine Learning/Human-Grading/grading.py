@@ -19,6 +19,7 @@ def write_csv(fp,data):
         writer = csv.writer(file)
         writer.writerows(data)
 
+
 # find the name of the folder full of pictures (assuming it's the only folder in the current directory)
 def find_folder_name():
     for item in os.scandir():
@@ -26,6 +27,12 @@ def find_folder_name():
             return item.name
     else:
         return False
+
+def early_quit(grades_file, pic_list):
+    write_csv(grades_file, pic_list)
+    pics_to_grade = len([pic for pic in pic_list if len(pic) == 1]) # checks how many pictures have not yet been graded
+    print('\nYou have %d pictures left to grade in this set.' % pics_to_grade)
+    print('Exiting grader, progress saved.')
 
 if __name__ == '__main__':     #so you can import the above functions without running all this
 
@@ -43,7 +50,7 @@ if __name__ == '__main__':     #so you can import the above functions without ru
         print('Make sure the folder of pictures to grade is in this directory')
         raise Exception
 
-    grades_file = folder_name + "_grades" #automatic name for the grades csv
+    grades_file = folder_name + "_grades.csv" #automatic name for the grades csv
 
     # checks to see if csv needs setup
     if len(params) > 1 and params[1] == 'n':
@@ -74,10 +81,12 @@ if __name__ == '__main__':     #so you can import the above functions without ru
         print('You have %d pictures left to grade in this set.' % pics_to_grade)
         time.sleep(1)
 
-        print('Drag the picture-viewing window to a convenient place, then press enter to begin grading.')
+        print("Drag the picture-viewing window to a convenient place, then press"
+                " enter to begin grading. (You may enter 'q' at any time to quit.)")
         shutil.copy('placeholder.jpg', 'current_pic.jpg')
         os.system('start current_pic.jpg')  # opens current_pic.jpg in the default photo viewer
-        input()                             # waits for user to press enter
+        if input().upper() == 'Q':          # waits for user to press enter
+            raise KeyboardInterrupt
 
         # This sets up the random sample with no repeats of the picture that we want to pull from all numbers will have 1 added as the 0th picture doesn't matter in this case, and the last picture does.
         sample = random.sample(range(len(pic_list)),len(pic_list))
@@ -93,17 +102,17 @@ if __name__ == '__main__':     #so you can import the above functions without ru
                     shutil.copy(file_path, 'current_pic.jpg') #copy the picture into current_pic.jpg, which is already pulled up in the default photo viewer
 
                     grade = input("What grade would you give this picture (%s.jpg)?\n" % id_str).strip().upper()
+                    if grade == 'Q':
+                        raise KeyboardInterrupt
 
                     pic_list[i].append(grade)
                 except Exception as e:
                     print(e)
                     print("Make sure you aren't grading too quickly...") # the try sometimes throws an error if I grade really fast
-                    write_csv(grades_file, pic_list)
-                    print('\nExiting grader, progress saved.')
+                    early_quit(grades_file, pic_list)
                     break
                 except KeyboardInterrupt:
-                    write_csv(grades_file, pic_list)                    # allows you to grade only part of a set, then come back later and finish.
-                    print('\nExiting grader, progress saved.')
+                    early_quit(grades_file, pic_list)
                     break
         else:
             # writes to the csv file
