@@ -101,6 +101,7 @@ if __name__ == '__main__':     #so you can import the above functions without ru
                     id_str = format(id, '06d')
 
                     file_path = folder_name + '\\' + id_str + '.jpg'
+
                     shutil.copy(file_path, 'current_pic.jpg') #copy the picture into current_pic.jpg, which is already pulled up in the default photo viewer
 
                     grade = input("What grade would you give this picture (%s.jpg)?\n" % id_str).strip().upper()
@@ -126,6 +127,7 @@ if __name__ == '__main__':     #so you can import the above functions without ru
         else:
             # writes to the csv file
             write_csv(grades_file, pic_list)
+            shutil.copy('placeholder.jpg', 'current_pic.jpg')
             print('\nDone grading! All grades have been saved in the "%s" file.' % grades_file)
     else:
         print('There are no pictures left to grade in this set.')
