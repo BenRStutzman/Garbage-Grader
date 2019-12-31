@@ -78,15 +78,17 @@ if __name__ == '__main__':     #so you can import the above functions without ru
     pics_to_grade = len([pic for pic in pic_list if len(pic) == 1]) # checks how many pictures have not yet been graded
 
     if pics_to_grade:
-        print('You have %d pictures left to grade in this set.' % pics_to_grade)
-        time.sleep(1)
 
-        print("Drag the picture-viewing window to a convenient place, then press"
-                " enter to begin grading. (You may enter 'q' at any time to quit.)")
+        print("\nWelcome to the Garbage Grader! Drag the picture-viewing window"
+              " to a convenient place, then press enter to begin grading.")
         shutil.copy('placeholder.jpg', 'current_pic.jpg')
         os.system('start current_pic.jpg')  # opens current_pic.jpg in the default photo viewer
-        if input().upper() == 'Q':          # waits for user to press enter
-            raise KeyboardInterrupt
+        input()                             # waits for the user to press enter
+
+        print("You have %d pictures left to grade in this set... Let's begin!\n"
+              "At any time, you may enter 'q' to quit or '#' to see how many"
+              " pictures are left.\n" % pics_to_grade)
+        time.sleep(1)
 
         # This sets up the random sample with no repeats of the picture that we want to pull from all numbers will have 1 added as the 0th picture doesn't matter in this case, and the last picture does.
         sample = random.sample(range(len(pic_list)),len(pic_list))
@@ -102,8 +104,15 @@ if __name__ == '__main__':     #so you can import the above functions without ru
                     shutil.copy(file_path, 'current_pic.jpg') #copy the picture into current_pic.jpg, which is already pulled up in the default photo viewer
 
                     grade = input("What grade would you give this picture (%s.jpg)?\n" % id_str).strip().upper()
+
+                    while grade == '#':
+                        pics_to_grade = len([pic for pic in pic_list if len(pic) == 1]) # checks how many pictures have not yet been graded
+                        print('\nYou have %d pictures left to grade in this set.' % pics_to_grade)
+                        grade = input("\nWhat grade would you give this picture (%s.jpg)?\n" % id_str).strip().upper()
+
                     if grade == 'Q':
                         raise KeyboardInterrupt
+
 
                     pic_list[i].append(grade)
                 except Exception as e:
