@@ -43,6 +43,7 @@ distribution = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0, 'N': 0}
 pic_folder = find_folder_name()
 set_name = pic_folder[:-4]
 sorted_name = set_name + '_sorted'
+os.remove('grades\\' + set_name + '_all_grades_resolved.csv')
 
 num_graders = 3
 grades = []
@@ -112,18 +113,29 @@ for pic in os.scandir(pic_folder):
     #print(grade)
     place(pic.name, num, grade)
 
-write_csv('grades\\' + set_name + '_all_grades_resolved.csv', pic_list)
 print('\nDone sorting!\n')
 
-print('Grade totals:\n')
+print('Distribution:\n')
+pic_list[1].extend(['', 'Distribution'])
+pic_list[2].extend(['','', ])
 for grade, number in distribution.items():
+    pic_list[1].append(grade)
+    pic_list[2].append(number)
     print(grade + ':' + str(number))
-print('total:', sum(distribution.values()), end = '\n\n')
+total = sum(distribution.values())
+print('total:', total, end = '\n\n')
 
-print('Category totals:\n')
+print('Resolutions:\n')
+pic_list[4].extend(['', 'Resolutions'])
+pic_list[5].extend(['','', ])
 for category, number in categories.items():
+    pic_list[4].append(category)
+    pic_list[5].append(number)
     print(category + ': ' + str(number))
-print('total:', sum(categories.values()), end = '\n\n')
+total = sum(categories.values())
+print('total:', total, end = '\n\n')
+
+write_csv('grades\\' + set_name + '_all_grades_resolved.csv', pic_list)
 
 time.sleep(3)
 os.system('taskkill /IM JPEGView.exe /f')
