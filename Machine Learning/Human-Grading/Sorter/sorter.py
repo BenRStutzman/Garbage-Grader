@@ -7,8 +7,16 @@ def find_folder_name():
     else:
         return False
 
-def place(pic_name, grade):
+def place(pic_name, pic_num, grade):
     shutil.copy(pic_folder + '\\' + pic_name, sorted_name + '\\' + grade + '\\' + pic_name)
+    pic_list.append([pic_num, grade])
+    distribution[grade] += 1
+
+# code that writes a 2-d dictionary to a csv file
+def write_csv(csv_name, data):
+    with open(csv_name, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
 
 def alert(path, message, id):
     os.system('start JPEGView64\\JPEGView ' + path)
@@ -30,6 +38,8 @@ def consult(path, all_grades):
 
 print('Sorting...\n')
 
+pic_list = []
+distribution = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0, 'N': 0}
 pic_folder = find_folder_name()
 set_name = pic_folder[:-4]
 sorted_name = set_name + '_sorted'
@@ -100,10 +110,17 @@ for pic in os.scandir(pic_folder):
             categories['median of three'] += 1
             grade = sorted(all_grades)[1]
     #print(grade)
-    place(pic.name, grade)
+    place(pic.name, num, grade)
 
-print('\nDone sorting!\n\nCategory totals:')
+write_csv('grades\\' + set_name + '_all_grades_resolved.csv', pic_list)
+print('\nDone sorting!\n')
 
+print('Grade totals:\n')
+for grade, number in distribution.items():
+    print(grade + ':' + str(number))
+print('total:', sum(distribution.values()), end = '\n\n')
+
+print('Category totals:\n')
 for category, number in categories.items():
     print(category + ': ' + str(number))
 print('total:', sum(categories.values()), end = '\n\n')
