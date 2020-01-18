@@ -54,6 +54,7 @@ def nice_date_time(year, month, day, hour, minute, second):
 def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                   prev_id):
 
+    now = datetime.datetime.now()
     ser = serial.Serial('/dev/ttyACM0', 9600)
     action = ''
     saved_action = ''
@@ -63,7 +64,6 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
 
     ident = prev_id
     while True:
-        now = datetime.datetime.now()
         hours = now.hour + now.minute / 60
         if on_hours[0] < hours < on_hours[1]:
             if not day:
@@ -96,7 +96,7 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                 log.flush()
                 print(to_print)
             elif saved_action:
-                to_save, to_print = formatter(saved_now, saved_action, ard_output, ident - 1)
+                to_save, to_print = formatter(saved_now, saved_action, ard_output, ident)
                 saved_action = ''
                 log.write(to_save)
                 log.flush()

@@ -9,7 +9,7 @@ const byte num_avgs = 20;
 const int start_delay = 300; //in cycles, which are about 0.1 seconds
 const int dump_time = 500; //in ms
 const float sensitivity = 0.020; //in kg, the lightest weight it will detect
-const float bin_weight = 3;
+const float bin_weight = 10;
 const byte check_freq = 5; //in minutes
 
 boolean bin_removed;
@@ -113,12 +113,23 @@ void detect_removal() {
     }
     float base_weight = avg;
     bin_removed = true;
-    while (avg < base_weight + bin_weight / 2 && avg < -bin_weight / 2) {
-      //Serial.println(avg, 3);
-      take_reading();
-      last_readings[counter % num_readings] = reading;
-      last_avgs[counter % num_avgs] = avg;
-      counter++;
+    while (true) {
+      while (avg < base_weight + bin_weight / 2 && avg < -bin_weight / 2) {
+        //Serial.println(avg, 3);
+        take_reading();
+        last_readings[counter % num_readings] = reading;
+        last_avgs[counter % num_avgs] = avg;
+        counter++;
+      }
+      for (int i = 0; i < 100; i++) {
+        take_reading();
+        last_readings[counter % num_readings] = reading;
+        last_avgs[counter % num_avgs] = avg;
+        counter++;
+      }
+      if (avg > base_weight + bin_weight / 2 | avg < -bin_weight / 2) {
+        break;
+      }
     }
     reset_scale();
   }

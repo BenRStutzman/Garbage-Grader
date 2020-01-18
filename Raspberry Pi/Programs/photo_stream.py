@@ -23,7 +23,7 @@ def stream_photos(folder = photostream, filename = "", shutter = 10000,
     while True:
         now = datetime.datetime.now()
         hours = now.hour + now.minute / 60
-        if on_hours[0] - 0.25 < now.hour < on_hours[1] + 0.25:
+        if on_hours[0] - 0.25 < hours < on_hours[1] + 0.25:
             if not day:
                 day = True
                 for pic in os.scandir(folder):
@@ -45,7 +45,7 @@ def collect_garbage(num_to_leave = 10, folder = photostream, on_hours = [6, 21])
     while True:
         now = datetime.datetime.now()
         hours = now.hour + now.minute / 60
-        if on_hours[0] - 0.5 < now.hour < on_hours[1] + 0.5:
+        if on_hours[0] - 0.5 < hours < on_hours[1] + 0.5:
             files = sorted([f.path for f in os.scandir(folder)])
             for file in files[:-num_to_leave]:
                 os.remove(file)
