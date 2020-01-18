@@ -127,7 +127,7 @@ void detect_removal() {
         last_avgs[counter % num_avgs] = avg;
         counter++;
       }
-      if (avg > base_weight + bin_weight / 2 | avg < -bin_weight / 2) {
+      if (avg > base_weight + bin_weight / 2 || avg > -bin_weight / 2) {
         break;
       }
     }
