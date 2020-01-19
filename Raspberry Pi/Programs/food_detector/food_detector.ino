@@ -165,14 +165,14 @@ void occasional_checks() {
     }
     else {
       // Camera's Scale
-      Serial.println("weight checked");
+      Serial.println("weight 1 checked");
       Serial.println(avg, 3);
   
       // Other Scales (Middle and Far)
-      Serial.println("weight trash checked");
+      Serial.println("weight 2 checked");
       Serial.println(sum_trash/num_minor_scale_measure, 3);
       
-      Serial.println("weight far checked");
+      Serial.println("weight 3 checked");
       Serial.println(sum_far/num_minor_scale_measure,3);
 
       // reset the vars used for printing the minor scales weight
