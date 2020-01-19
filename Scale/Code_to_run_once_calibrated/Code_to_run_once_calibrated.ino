@@ -24,7 +24,7 @@
 
 #include "HX711.h"
 
-#define calibration_factor -26000.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
+#define calibration_factor -22500 //This value is obtained using the SparkFun_HX711_Calibration sketch
 
 #define DOUT  3
 #define CLK  2
@@ -39,6 +39,8 @@ float delta;
 HX711 scale;
 
 void setup() {
+  pinMode(9, OUTPUT);
+  digitalWrite(9, HIGH);
   Serial.begin(9600);
   Serial.println("HX711 scale demo");
 
