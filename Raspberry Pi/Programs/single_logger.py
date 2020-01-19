@@ -11,8 +11,6 @@ other_folder = "/home/pi/GarbageGrader/Data/composites/other"
 log = "/home/pi/GarbageGrader/Data/log.csv"
 on_hours = [6, 21]
 
-weight_queue = [-1, -1, -1]
-
 def save_composite(ident, out_folder, num_tiles = 4, inp_folder = photostream):
 
     buffer = []
@@ -35,14 +33,14 @@ def save_composite(ident, out_folder, num_tiles = 4, inp_folder = photostream):
 
     # following 10ish lines are from glombard on github:
     # https://gist.github.com/glombard/7cd166e311992a828675
-
+    
     composite = Image.new("RGB", (3200, 3200))
 
     for index, picture in enumerate(reversed(pictures)):
-
+        
         x = index % 2 * 1600
         y = index // 2 * 1600
-
+      
         composite.paste(picture.crop((466, 0, 2066, 1600)),
                                     (x, y, x + 1600, y + 1600))
 
@@ -53,9 +51,6 @@ def nice_date_time(year, month, day, hour, minute, second):
     return str.format("%d-%.2d-%.2d %.2d:%.2d:%.2d" % (year, month, day, hour,
                                                         minute, second))
 
-def nice_time(hour, minute, second):
-    return str.format("%.2d:%.2d:%.2d" % (hour, minute, second))
-
 def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                   prev_id):
 
@@ -63,105 +58,86 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
     action = ''
     saved_action = ''
     day = True
-    terminal_header = "\nTime      ID      Action          Item (g)   Wt1 (kg)   Wt2 (kg)   Wt3 (kg)"
-    print(terminal_header)
+    print("\nTime                  ID       Action           "
+                  "Weight (kg)   Weight (g)")
 
     ident = prev_id
     while True:
         cur_time = datetime.datetime.now()
         hours = cur_time.hour + cur_time.minute / 60
-        if on_hours[0] < hours < on_hours[1]: # if during "daytime":
-            if not day: # wake up sequence
+        if on_hours[0] < hours < on_hours[1]:
+            if not day:
                 day = True
                 ser.reset_input_buffer()
                 ser.write(bytes('reset scale 1', 'utf-8'))
                 print("\nWaking up...")
+                ard_output = ser.readline().decode('utf-8').strip() 
+                print("\nTime                  ID       Action           "
+                  "Weight (kg)   Weight (g)")
+            else:
                 ard_output = ser.readline().decode('utf-8').strip()
-                print(terminal_header)
-            else: # already awake
-                ard_output = ser.readline().decode('utf-8').strip()
-
-            if ard_output[0].isalpha(): # action from the arduino
-                # if already action waiting, stow it for later till it gets its number
+            if ard_output[0].isalpha():
                 if action in ['food added', 'bin removed', 'scale reset']:
                     saved_action = action
                     saved_now = now
-                action = ard_output # save the action to wait for its number
+                action = ard_output
                 if action in ['food added', 'bin removed', 'scale reset']:
                     ident += 1
                     out_folder = food_folder if action == 'food added' else other_folder
-                    save_composite(ident, out_folder) # save a picture
+                    save_composite(ident, out_folder)
                 now = datetime.datetime.now()
-            else: # numerical Arduino output
-                if action: # action waiting for number
-                    if action == 'food added':
-                        to_save, to_print = formatter(saved_now, saved_action, item_weight = ard_output, ident)
-                    elif action in ['bin removed', 'scale reset']:
-                        to_save, to_print = formatter(saved_now, saved_action, weight1 = ard_output, ident)
-                    elif action == 'weight 1 checked':
-                        weight_queue[0] = ard_output
-                        action = ''
-                        continue
-                    elif action == 'weight 2 checked':
-                        weight_queue[1] = ard_output
-                        action = ''
-                        continue
-                    elif action == 'weight 3 checked':
-                        weight_queue[2] = ard_output
-                        to_save, to_print = formatter(now, 'weight checked', weight1 = weigh_queue[0],
-                                            weight2 = weight_queue[1], weight3 = weight_queue[2])
-                        weight_queue = [-1, -1, -1]
-                    action = ''
-                    log.write(to_save)
-                    log.flush()
-                    print(to_print)
-                elif saved_action: # saved action waiting for a number
-                    if saved_action == 'food added':
-                        to_save, to_print = formatter(saved_now, saved_action, item_weight = ard_output, ident)
-                    else: # bin removal or scale reset saved
-                        to_save, to_print = formatter(saved_now, saved_action, weight1 = ard_output, ident)
-                    saved_action = ''
-                    log.write(to_save)
-                    log.flush()
-                    print(to_print)
+            elif action:
+                if action in ['food added', 'bin removed', 'scale reset']:
+                    to_save, to_print = formatter(now, action, ard_output, ident)
                 else:
-                    print('There was no action or saved action, but I got a number.')
-        else: # not during "daytime" hours
-            if day: # go-to-sleep sequence
+                    to_save, to_print = formatter(now, action, ard_output)
+                action = ''
+                log.write(to_save)
+                log.flush()
+                print(to_print)
+            elif saved_action:
+                to_save, to_print = formatter(saved_now, saved_action, ard_output, ident)
+                saved_action = ''
+                log.write(to_save)
+                log.flush()
+                print(to_print)
+            else:
+                print('There was no action or saved action, but I got a number.')
+        else:
+            if day:
                 day = False
-                # leftover picture; delete it and decrement ID
                 if action in ['food added', 'bin removed', 'scale reset']:
                     out_folder = food_folder if action == 'food added' else other_folder
                     pic_path = str.format('%s/%06d.jpg' % (out_folder, ident))
                     os.remove(pic_path)
                     ident -= 1
-                action = '' # clear the actions and queues
-                saved_action = ''
-                weight_queue = [-1, -1, -1]
+                action = ''
                 print("\nGoing to sleep...")
-            # already asleep
             time.sleep(60)
 
-def formatter(now, action, item_weight = '', weight1 = '', weight2 = '', weight3 = '', ident = -1):
-    nice_dt = nice_date_time(now.year, now.month, now.day,
+def formatter(now, action, weight, ident = -1):
+    info = nice_date_time(now.year, now.month, now.day,
                           now.hour, now.minute, now.second)
-    nice_t = nice_time(now.hour, now.minute, now.second)
+    if action == 'food added':
+        weight1, weight2 = "", weight
+    else:
+        weight1, weight2 = weight, ""
     if ident == -1:
         id_str = ""
     else:
         id_str = str.format("%06d" % ident)
-    to_save = str.format("%s,%s,%s,%s,%s,%s,%s\n" %
-                         (nice_dt, id_str, action, item_weight, weight1, weight2, weight3))
-    to_print = str.format("%s  %6s  %s%8s  %8s   %8s   %8s" %
-                         (nice_t, id_str, str.ljust(action, 14),
-                          item_weight, weight1, weight2, weight3))
+    to_save = str.format("%s,%s,%s,%s,%s\n" %
+                         (info, id_str, action, weight1, weight2))
+    to_print = str.format("%s   %6s   %s   %8s      %8s" %
+                         (info, id_str, str.ljust(action, 14),
+                          weight1, weight2))
     return to_save, to_print
 
 def log_pics_and_weights(clear_logs, in_folder = photostream,
                          food_folder = food_folder, other_folder = other_folder,
                          path = log, on_hours = on_hours):
 
-    header = "Time,ID,Action,Item weight (g),Weight 1 (kg),Weight 2 (kg),Weight 3 (kg)"
+    header = "Time,ID,Action,Weight (kg),Weight (g)"
     if clear_logs:
         if input("Are you sure you want to clear the log and delete all pictures"
                  " (y/n)? ") != 'y':
@@ -189,7 +165,7 @@ def log_pics_and_weights(clear_logs, in_folder = photostream,
     f.close()
 
     f = open(path, 'a')
-
+    
     record_events(in_folder, food_folder, other_folder, f, on_hours, prev_id)
 
 
@@ -199,3 +175,4 @@ else:
     clear_logs = False
 
 log_pics_and_weights(clear_logs)
+

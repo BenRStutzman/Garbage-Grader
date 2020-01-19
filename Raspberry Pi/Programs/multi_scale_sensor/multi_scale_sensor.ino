@@ -1,6 +1,10 @@
 #include "HX711.h"
-#define DOUT  3
-#define CLK  2
+#define DOUT_CAM     3
+#define CLK_CAM      2
+#define DOUT_MIDDLE  5
+#define CLK_MIDDLE   4
+#define DOUT_FAR     7
+#define CLK_FAR      6
 
 #define calibration_factor -22500.0 //This value is obtained using the SparkFun_HX711_Calibration sketch (or just by testing weights in this program and adjusting)
 
@@ -14,7 +18,9 @@ const byte check_freq = 5; //in minutes
 
 boolean bin_removed;
 boolean find_weight;
-long check_interval = check_freq * 60000;
+boolean minor_scale_setup = false;
+int num_minor_scale_measure = 0;
+long check_interval = check_freq * 60000 - 2000;
 unsigned long counter;
 unsigned long last_trigger;
 unsigned long last_check;
@@ -23,12 +29,17 @@ float last_avgs[num_avgs];
 float reading;
 float avg;
 float sum;
+float sum_trash;
+float sum_far;
 float delta;
 float item_weight;
 float prev_avg;
 float max_weight[2];
 
 HX711 scale;
+HX711 scale_trash;
+HX711 scale_far;
+
 
 void take_reading() {
   reading = scale.get_units();
@@ -36,6 +47,15 @@ void take_reading() {
   sum += reading;
   avg = sum / num_readings;
   delta = avg - last_avgs[counter % num_avgs];
+
+
+  // only record the data from the other scales if we are about to report the data
+  // happens for 2 sec every check_freq minutes
+  if(minor_scale_setup){
+   sum_trash += scale_trash.get_units();
+   sum_far += scale_far.get_units();
+   num_minor_scale_measure++;
+  }
 }
 
 void detect_food() {
@@ -138,15 +158,39 @@ void detect_removal() {
 void occasional_checks() {
   // stuff to check every check_freq minutes
   if (millis() - last_check >= check_interval) {
-    Serial.println("weight checked");
-    Serial.println(avg, 3);
-    last_check += check_interval;
-    max_weight[0] = max_weight[1];
-    max_weight[1] = avg;
-    //String input = Serial.readString();
-    //Serial.println(input);
-    if (Serial.readString() == "reset scale 1") {
-      reset_scale();
+    // check to see if we need to premptively need to start recording data from the other scales
+    if(!minor_scale_setup){
+      last_check += 2000;
+      minor_scale_setup = true;
+    }
+    else {
+      // Camera's Scale
+      Serial.println("weight 1 checked");
+      Serial.println(avg, 3);
+  
+      // Other Scales (Middle and Far)
+      Serial.println("weight 2 checked");
+      Serial.println(sum_trash/num_minor_scale_measure, 3);
+      
+      Serial.println("weight 3 checked");
+      Serial.println(sum_far/num_minor_scale_measure,3);
+
+      // reset the vars used for printing the minor scales weight
+      sum_trash = 0;
+      sum_far = 0;
+      num_minor_scale_measure = 0;
+      minor_scale_setup = false;
+
+      
+      // Stuff to make sure that this can continue working
+      last_check += check_interval;
+      max_weight[0] = max_weight[1];
+      max_weight[1] = avg;
+      //String input = Serial.readString();
+      //Serial.println(input);
+      if (Serial.readString() == "reset scale 1") {
+        reset_scale();
+      }
     }
   }
 }
@@ -154,10 +198,20 @@ void occasional_checks() {
 void setup() {
   Serial.begin(9600);
 
-  scale.begin(DOUT, CLK);
+  pinMode(9,OUTPUT);
+  digitalWrite(9,HIGH);     // This is so that we can have other ports as 5V for the other
+  pinMode(10,OUTPUT);       // scales.
+  digitalWrite(10 ,HIGH);  
+
+  scale.begin(DOUT_CAM, CLK_CAM);
   scale.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
   reset_scale();
 
+  scale_trash.begin(DOUT_MIDDLE, CLK_MIDDLE);
+  scale_trash.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+
+  scale_far.begin(DOUT_FAR, CLK_FAR);
+  scale_far.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
 }
 
 void loop() {
