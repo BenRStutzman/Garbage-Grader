@@ -19,7 +19,8 @@ start_date = datetime(2019, 11, 23)
 end_date = datetime(2020, 1, 17)
 daily_weights = {}
 while start_date <= end_date:
-    daily_weights[start_date] = {'log': [], 'weight': 0.0, 'removals': 0, 'weighted removals': 0}
+    daily_weights[start_date] = {'log': [], 'weight': 0.0, 'removals': 0,
+                                    'weighted removals': 0}
     start_date += timedelta(days = 1)
 
 #print(daily_weights)
@@ -68,16 +69,15 @@ for day, value in daily_weights.items():
                 value['weighted removals'] += 1
                 value['weight'] += entry['bin_weight']
 
-print('\nDate\t\tWeight (kg)\tRemovals\tWeighted Removals')
+print('\nDate\t\tWeight (kg)\tRemovals')
 print('-'*65)
 
-data =[['Date', 'Weight (kg)', 'Removals', 'Weighted Removals']]
+data =[['Date', 'Weight (kg)', 'Removals',]]
 
 for day, value in daily_weights.items():
     data.append([str.format('%d-%d-%d' % (day.year, day.month, day.day)),
-            value['weight'], value['removals'], value['weighted removals']])
+            value['weight'], value['removals']])
 
-    print('%d-%02d-%02d\t%s\t\t%d\t\t%d' % (day.year, day.month, day.day, value['weight'], value['removals'],
-                                  value['weighted removals']))
+    print('%d-%02d-%02d\t%s\t\t%d' % (day.year, day.month, day.day, value['weight'], value['removals'],))
 
 write_csv('daily_weights.csv', data)
