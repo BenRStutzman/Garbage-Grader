@@ -3,15 +3,17 @@
 #define CLK_CAM      2
 #define DOUT_MIDDLE  5
 #define CLK_MIDDLE   4
-#define DOUT_FAR     7
-#define CLK_FAR      6
+#define DOUT_FAR     8
+#define CLK_FAR      7
 
-#define calibration_factor -22500.0 //This value is obtained using the SparkFun_HX711_Calibration sketch (or just by testing weights in this program and adjusting)
+#define calibration_factor_1 -20690.0 //This value is obtained using the SparkFun_HX711_Calibration sketch (or just by testing weights in this program and adjusting)
+#define calibration_factor_2 -21430.0
+#define calibration_factor_3 -24170.0
 
 const byte num_readings = 20;
 const byte num_avgs = 20;
 const int start_delay = 300; //in cycles, which are about 0.1 seconds
-const int dump_time = 500; //in ms
+const int dump_time = 1000; //in ms
 const float sensitivity = 0.020; //in kg, the lightest weight it will detect
 const float bin_weight = 10;
 const byte check_freq = 5; //in minutes
@@ -104,6 +106,25 @@ void reset_scale() {
   Serial.println(reading, 3);
 }
 
+void zero_scales() {
+  Serial.println("scales reset");
+  for(int i = 0; i < start_delay; i++) {
+    scale.get_units();
+    scale_trash.get_units();
+    scale_far.get_units();
+  }
+  scale.tare();
+  scale_trash.tare();
+  scale_far.tare();
+  
+  reset_readings();
+  counter = 1;
+  max_weight[0] = 0.0;
+  max_weight[1] = 0.0;
+  find_weight = false;
+  Serial.println(reading, 3);
+}
+
 void reset_readings() {
   
   reading = scale.get_units();
@@ -188,8 +209,8 @@ void occasional_checks() {
       max_weight[1] = avg;
       //String input = Serial.readString();
       //Serial.println(input);
-      if (Serial.readString() == "reset scale 1") {
-        reset_scale();
+      if (Serial.readString() == "zero scales") {
+        zero_scales();
       }
     }
   }
@@ -203,19 +224,22 @@ void setup() {
   pinMode(10,OUTPUT);       // scales.
   digitalWrite(10 ,HIGH);  
 
-  scale.begin(DOUT_CAM, CLK_CAM);
-  scale.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
-  reset_scale();
-
   scale_trash.begin(DOUT_MIDDLE, CLK_MIDDLE);
-  scale_trash.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+  scale_trash.set_scale(calibration_factor_2); //This value is obtained by using the SparkFun_HX711_Calibration sketch
 
   scale_far.begin(DOUT_FAR, CLK_FAR);
-  scale_far.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+  scale_far.set_scale(calibration_factor_3); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+
+  scale.begin(DOUT_CAM, CLK_CAM);
+  scale.set_scale(calibration_factor_1); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+  
+  zero_scales();
+
 }
 
 void loop() {
 
+//  Serial.println("made it here");
   occasional_checks();
   detect_removal();
   take_reading();
@@ -226,7 +250,7 @@ void loop() {
   last_avgs[counter % num_avgs] = avg;
   counter++;
   
-  //Serial.println(avg, 3);
+//  Serial.println(avg, 3);
 
   /*
   //Stuff To print for diagnosis

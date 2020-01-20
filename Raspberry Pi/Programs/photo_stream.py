@@ -7,9 +7,11 @@ import time
 
 photostream = "/home/pi/GarbageGrader/Data/photostream"
 
+on_hours = [6, 21]
+
 def stream_photos(folder = photostream, filename = "", shutter = 10000,
                   ISO = None, brightness = None, contrast = None,
-                  on_hours = [6, 21]):
+                  on_hours = on_hours):
 
     shutter_str = " -ss " + str(shutter)
     ISO_str = "" if ISO == None else " -ISO " + str(ISO)
@@ -40,7 +42,7 @@ def stream_photos(folder = photostream, filename = "", shutter = 10000,
             
 
 
-def collect_garbage(num_to_leave = 10, folder = photostream, on_hours = [6, 21]):
+def collect_garbage(num_to_leave = 10, folder = photostream, on_hours = on_hours):
     
     while True:
         now = datetime.datetime.now()

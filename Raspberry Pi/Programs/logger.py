@@ -11,8 +11,6 @@ other_folder = "/home/pi/GarbageGrader/Data/composites/other"
 log = "/home/pi/GarbageGrader/Data/log.csv"
 on_hours = [6, 21]
 
-weight_queue = [-1, -1, -1]
-
 def save_composite(ident, out_folder, num_tiles = 4, inp_folder = photostream):
 
     buffer = []
@@ -58,7 +56,7 @@ def nice_time(hour, minute, second):
 
 def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                   prev_id):
-
+    weight_queue = [-1, -1, -1]
     ser = serial.Serial('/dev/ttyACM0', 9600)
     action = ''
     saved_action = ''
@@ -74,7 +72,7 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
             if not day: # wake up sequence
                 day = True
                 ser.reset_input_buffer()
-                ser.write(bytes('reset scale 1', 'utf-8'))
+                ser.write(bytes('zero scales', 'utf-8'))
                 print("\nWaking up...")
                 ard_output = ser.readline().decode('utf-8').strip()
                 print(terminal_header)
@@ -83,11 +81,11 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
 
             if ard_output[0].isalpha(): # action from the arduino
                 # if already action waiting, stow it for later till it gets its number
-                if action in ['food added', 'bin removed', 'scale reset']:
+                if action in ['food added', 'bin removed', 'scale reset', 'scales reset']:
                     saved_action = action
                     saved_now = now
                 action = ard_output # save the action to wait for its number
-                if action in ['food added', 'bin removed', 'scale reset']:
+                if action in ['food added', 'bin removed', 'scale reset', 'scales reset']:
                     ident += 1
                     out_folder = food_folder if action == 'food added' else other_folder
                     save_composite(ident, out_folder) # save a picture
@@ -95,9 +93,15 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
             else: # numerical Arduino output
                 if action: # action waiting for number
                     if action == 'food added':
-                        to_save, to_print = formatter(saved_now, saved_action, item_weight = ard_output, ident)
+                        to_save, to_print = formatter(now, action,
+                                        item_weight = ard_output, ident = ident)
                     elif action in ['bin removed', 'scale reset']:
-                        to_save, to_print = formatter(saved_now, saved_action, weight1 = ard_output, ident)
+                        to_save, to_print = formatter(now, action,
+                                            weight1 = ard_output, ident = ident)
+                    elif action == 'scales reset':
+                        to_save, to_print = formatter(now, action,
+                                weight1 = ard_output, weight2 = '0.000',
+                                weight3 = '0.000', ident = ident)
                     elif action == 'weight 1 checked':
                         weight_queue[0] = ard_output
                         action = ''
@@ -108,7 +112,7 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                         continue
                     elif action == 'weight 3 checked':
                         weight_queue[2] = ard_output
-                        to_save, to_print = formatter(now, 'weight checked', weight1 = weigh_queue[0],
+                        to_save, to_print = formatter(now, 'weight checked', weight1 = weight_queue[0],
                                             weight2 = weight_queue[1], weight3 = weight_queue[2])
                         weight_queue = [-1, -1, -1]
                     action = ''
@@ -117,9 +121,15 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                     print(to_print)
                 elif saved_action: # saved action waiting for a number
                     if saved_action == 'food added':
-                        to_save, to_print = formatter(saved_now, saved_action, item_weight = ard_output, ident)
+                        to_save, to_print = formatter(saved_now, saved_action,
+                                        item_weight = ard_output, ident = ident)
+                    elif saved_action == 'scales reset':
+                        to_save, to_print = formatter(saved_now, saved_action,
+                                        weight1 = ard_output, weight2 = '0.000',
+                                        weight3 = '0.000', ident = ident)
                     else: # bin removal or scale reset saved
-                        to_save, to_print = formatter(saved_now, saved_action, weight1 = ard_output, ident)
+                        to_save, to_print = formatter(saved_now, saved_action,
+                                            weight1 = ard_output, ident = ident)
                     saved_action = ''
                     log.write(to_save)
                     log.flush()
@@ -130,7 +140,7 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
             if day: # go-to-sleep sequence
                 day = False
                 # leftover picture; delete it and decrement ID
-                if action in ['food added', 'bin removed', 'scale reset']:
+                if action in ['food added', 'bin removed', 'scale reset', 'scales reset']:
                     out_folder = food_folder if action == 'food added' else other_folder
                     pic_path = str.format('%s/%06d.jpg' % (out_folder, ident))
                     os.remove(pic_path)
