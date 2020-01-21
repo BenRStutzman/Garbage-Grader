@@ -45,33 +45,41 @@ def early_quit(grades_file, pic_list):
 #----------------------------------------------------------------------#
 # Variable declarations
 
+last_pic = 'placeholder.jpg'
 pic_list = []
 params = sys.argv
 
 #----------------------------------------------------------------------#
 # Main function
-drive = ''
-for letter in ['C']:
-    try:
-        os.chdir(letter + ':\\GRADER0\\Other')
-        folder_name = find_folder_name()
-        print('USB found in drive: ' + letter)
-        drive = letter
-        break
-    except FileNotFoundError:
-        continue
-    except PermissionError:
-        continue
 
+auto_local = True
+flash_drive = False if auto_local or 'local' in params else True
+
+if flash_drive:
+    for letter in ['D','E','F','G']:
+        try:
+            dir = letter + ':\\Other'
+            os.chdir(dir)
+            folder_name = find_folder_name()
+            print('Running from USB in drive ' + letter)
+            break
+        except FileNotFoundError:
+            continue
+        except PermissionError:
+            continue
+else:
+    dir = 'C:\\GRADER0\\Other'
+    os.chdir(dir)
+    folder_name = find_folder_name()
+    print('Running locally from C:\\GRADER0')
 
 if not folder_name:
     print('Make sure the folder of pictures to grade is in this directory')
     raise Exception
 
-grades_file = folder_name + "_grades.csv" #automatic name for the grades csv
+grades_file = folder_name[:-4] + "_grades.csv" #automatic name for the grades csv
 
-# checks to see if csv needs setup
-if len(params) > 1 and params[1] == 'n':
+if 'clear' in params:
     if input('Are you sure you want to overwrite the grades file (y/n)? ') == 'y':
         setup_csv(folder_name, grades_file)
         print('erasing current grades file...')
@@ -79,7 +87,6 @@ if len(params) > 1 and params[1] == 'n':
     else:
         print('keeping current grades file...')
         time.sleep(1)
-
 
 # This is creating a list of the rows of the csv for ease of reading and writing without constantly reading and writing to the file.
 try:
@@ -97,8 +104,6 @@ csv_file.close()
 
 pics_to_grade = len([pic for pic in pic_list if len(pic) == 1]) # checks how many pictures have not yet been graded
 
-
-
 if pics_to_grade:
 
     print("\nWelcome to the Garbage Grader! Drag this window and the "
@@ -106,21 +111,27 @@ if pics_to_grade:
             "enter to begin grading.")
     time.sleep(2)
     shutil.copy('placeholder.jpg', 'current_pic.jpg')
-    os.system('start ' + 'JPEGView64\\JPEGView current_pic.jpg')  # opens current_pic.jpg in the default photo viewer
+    os.system('start ' + dir + '\\JPEGView64\\JPEGView current_pic.jpg')  # opens current_pic.jpg in the default photo viewer
     input()                             # waits for the user to press enter
 
     print("You have %d pictures left to grade in this set... Let's begin!\n"
-          "At any time, you may enter 'q' to quit or '#' to see how many"
-          " pictures are left.\n" % pics_to_grade)
+          "\nAt any time, you may enter:\n'<' to go back to the previous picture\n"
+          "'#' to see how many pictures are left\n'q' to save your progress"
+          " and quit\n" % pics_to_grade)
     time.sleep(1)
 
     # This sets up the random sample with no repeats of the picture that we want to pull from all numbers will have 1 added as the 0th picture doesn't matter in this case, and the last picture does.
     sample = random.sample(range(len(pic_list)),len(pic_list))
 
     # Iterating through each of the pictures in the list. Copies the pictures into current_pic.jpg and then takes in the grade of commandline. Can break out with Ctrl c.
-    for i in sample:
-        id = int(pic_list[i][0])
-        if len(pic_list[i]) == 1: #if it still needs a grade
+    go_back = False
+    i = 0
+    max_i = 0
+    while i < len(sample):
+        sample_num = sample[i]
+        id = int(pic_list[sample_num][0])
+        if len(pic_list[sample_num]) == 1 or i < max_i: #if it still needs a grade
+            max_i = max(i, max_i)
             try:
                 id_str = format(id, '06d')
 
@@ -138,11 +149,18 @@ if pics_to_grade:
                         print("Whoops, I didn't catch that.")
                     grade = input("\nWhat grade would you give this picture (%s.jpg)?\n" % id_str).strip().upper()
 
-                if grade == 'Q':
+                if grade == 'Q': # quit
                     raise KeyboardInterrupt
 
+                if grade == '<': # go back to last picture
+                    i -= 1
+                    continue
 
-                pic_list[i].append(grade)
+                if len(pic_list[sample_num]) == 1:
+                    pic_list[sample_num].append(grade)
+                else:
+                    pic_list[sample_num][1] = grade
+
             except Exception as e:
                 print(e)
                 print("Make sure you aren't grading too quickly...") # the try sometimes throws an error if I grade really fast
@@ -151,6 +169,7 @@ if pics_to_grade:
             except KeyboardInterrupt:
                 early_quit(grades_file, pic_list)
                 break
+        i += 1
     else:
         # writes to the csv file
         write_csv(grades_file, pic_list)
