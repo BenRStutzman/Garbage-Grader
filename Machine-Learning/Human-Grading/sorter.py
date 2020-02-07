@@ -42,7 +42,7 @@ pic_list = []
 distribution = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0, 'N': 0}
 set_name = 'Set_' + input('Enter set #: ')
 pic_folder = set_name + '\\' + set_name + '_all'
-grades_folder = set_name + '\\grades'
+grades_folder = set_name + '\\' + set_name + '_grades'
 sorted_folder = set_name + '\\' + set_name + '_sorted'
 resolved_name = grades_folder + '\\' + set_name + '_grades_resolved.csv'
 try:
