@@ -10,13 +10,13 @@
 #define calibration_factor_2 -21430.0
 #define calibration_factor_3 -24170.0
 
-const byte num_readings = 20;
-const byte num_avgs = 20;
-const int start_delay = 300; //in cycles, which are about 0.1 seconds
-const int dump_time = 1000; //in ms
+const byte num_readings = 20; //how many readings at a time it averages
+const byte num_avgs = 20; //how many averages back it compares for a "delta"
+const int start_delay = 300; //startup time, in cycles, which are about 0.1 seconds
+const int dump_time = 1000; //time it waits before assuming a person's done dumping, in ms
 const float sensitivity = 0.020; //in kg, the lightest weight it will detect
-const float bin_weight = 10;
-const byte check_freq = 5; //in minutes
+const float bin_weight = 10; //in kg
+const byte check_freq = 5; //in minutes, how often it checks the total weight of the scales
 
 boolean bin_removed;
 boolean find_weight;
@@ -90,7 +90,7 @@ void reset_scale() {
   for(int i = 0; i < start_delay; i++) { scale.get_units(); }
   if (bin_removed) {
     float amount_removed = max_weight[0] - scale.get_units();
-    if (amount_removed < 1) { Serial.println(0, 3); }
+    if (amount_removed < 0.1) { Serial.println(0, 3); }
     else { Serial.println(amount_removed, 3); }
   }
   scale.tare();
@@ -141,7 +141,7 @@ void detect_removal() {
     //if (find_weight) { Serial.println("0.00"); }
     Serial.println("bin removed");
     int i = 0;
-    while (i < 100) {
+    while (i < start_delay) {
       //Serial.println("delta:");
       //Serial.println(delta, 3);
       take_reading();
@@ -250,7 +250,7 @@ void loop() {
   last_avgs[counter % num_avgs] = avg;
   counter++;
   
-//  Serial.println(avg, 3);
+  //Serial.println(avg, 3);
 
   /*
   //Stuff To print for diagnosis
