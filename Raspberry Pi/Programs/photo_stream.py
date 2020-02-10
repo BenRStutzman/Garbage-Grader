@@ -29,7 +29,10 @@ def stream_photos(folder = photostream, filename = "", shutter = 10000,
             if not day:
                 day = True
                 for pic in os.scandir(folder):
-                    os.remove(pic)
+                    try:
+                        os.remove(pic)
+                    except:
+                        pass
                 batch = 0
             if os.system("raspistill -t 60000 -tl 0 -o %s%03d%%03d.jpg%s%s%s%s"
               % (path, batch, shutter_str, ISO_str, brightness_str, contrast_str)):
@@ -50,7 +53,10 @@ def collect_garbage(num_to_leave = 10, folder = photostream, on_hours = on_hours
         if on_hours[0] - 0.5 < hours < on_hours[1] + 0.5:
             files = sorted([f.path for f in os.scandir(folder)])
             for file in files[:-num_to_leave]:
-                os.remove(file)
+                try:
+                    os.remove(file)
+                except:
+                    pass
             time.sleep(1)
         else:
             time.sleep(60)

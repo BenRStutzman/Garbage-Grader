@@ -57,9 +57,22 @@ def nice_time(hour, minute, second):
 def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                   prev_id):
     weight_queue = [-1, -1, -1]
-    ser = serial.Serial('/dev/ttyACM0', 9600)
+    while True:
+        try:
+            ser = serial.Serial('/dev/ttyACM0', 9600)
+            break
+        except serial.serialutil.SerialException:
+            print("Arduino not detected. Trying again in 5 minutes...")
+            time.sleep(300)
+            
     action = ''
     saved_action = ''
+    cur_time = datetime.datetime.now()
+    hours = cur_time.hour + cur_time.minute / 60
+    if on_hours[0] < hours < on_hours[1]: # if starting at night
+        night_start = False
+    else:
+        night_start = True
     day = True
     terminal_header = "\nTime      ID      Action          Item (g)   Wt1 (kg)   Wt2 (kg)   Wt3 (kg)"
     print(terminal_header)
@@ -143,12 +156,20 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                 if action in ['food added', 'bin removed', 'scale reset', 'scales reset']:
                     out_folder = food_folder if action == 'food added' else other_folder
                     pic_path = str.format('%s/%06d.jpg' % (out_folder, ident))
-                    os.remove(pic_path)
+                    try:
+                        os.remove(pic_path)
+                    except:
+                        pass
                     ident -= 1
                 action = '' # clear the actions and queues
                 saved_action = ''
                 weight_queue = [-1, -1, -1]
                 print("\nGoing to sleep...")
+                # if it's been on for the day and is now turning off, restart Pi
+                if not night_start:
+                    time.sleep(10)
+                    os.system("sudo reboot")
+                night_start = False
             # already asleep
             time.sleep(60)
 
@@ -179,9 +200,15 @@ def log_pics_and_weights(clear_logs, in_folder = photostream,
             return
         prev_id = -1
         for pic in os.scandir(food_folder):
-            os.remove(pic)
+            try:
+                os.remove(pic)
+            except:
+                pass
         for pic in os.scandir(other_folder):
-            os.remove(pic)
+            try:
+                os.remove(pic)
+            except:
+                pass
         f = open(path, 'w')
         f.write(header + '\n')
     else:
