@@ -45,10 +45,13 @@ pic_folder = set_name + '\\' + set_name + '_all'
 grades_folder = set_name + '\\' + set_name + '_grades'
 sorted_folder = set_name + '\\' + set_name + '_sorted'
 resolved_name = grades_folder + '\\' + set_name + '_grades_resolved.csv'
-try:
-    os.remove(resolved_name)
-except FileNotFoundError:
-    pass
+
+if set_name + '_grades_resolved.csv' in [file.name for file in os.scandir(grades_folder)]:
+    if input('Overwrite existing ' + set_name + '_grades_resolved file (y/n)? ') == 'y':
+        os.remove(resolved_name)
+    else:
+        print('Exiting program...')
+        raise Exception
 
 num_graders = 3
 grades = []
@@ -58,7 +61,11 @@ grader = 0
 try:
     os.mkdir(sorted_folder)
 except FileExistsError:
-    pass
+    if input('Overwrite existing ' + set_name + '_sorted folder (y/n)? ') == 'y':
+        os.remove(sorted_folder)
+    else:
+        print('Exiting program...')
+        raise Exception
 
 for letter in 'ABCDFN':
     sub_dir = sorted_folder + '\\' + letter
