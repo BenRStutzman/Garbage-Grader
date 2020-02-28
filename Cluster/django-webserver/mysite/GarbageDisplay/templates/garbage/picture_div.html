@@ -1,0 +1,13 @@
+{% load static %}
+
+{% for pic in pictures %}
+  <div class="food" id = "{{pic.id}}">
+    <!-- <p>{{pic.timestamp}} ----- {{pic.name}}</p> -->
+    <img src="{% static ''%}pictures/{{pic.name}}" alt="" height="800" width="800">
+		<p class="grade"> {{ pic.grade }} </p>
+
+		{% if pic.weight != 0 %}
+	    <p>Weight: <span class="weight">{{pic.weight}}</p>
+		{%endif%}
+  </div>
+{%endfor%}

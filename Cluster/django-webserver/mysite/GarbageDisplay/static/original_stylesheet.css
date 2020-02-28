@@ -1,0 +1,15 @@
+.food img { 
+	float: left;
+	padding: 5px;
+}
+.food .grade{ 
+	padding: 25px;
+	float: left;
+	font-size:150pt;
+}
+/* Clearfix (clear floats) */
+.food::after {
+	content: "";
+	clear: both;
+  display: table;
+}

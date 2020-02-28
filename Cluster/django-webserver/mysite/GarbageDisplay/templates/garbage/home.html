@@ -1,0 +1,19 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <script type="text/javascript" src = "{% static 'jquery-3.4.1.js' %}"></script>
+    <script type="text/javascript" src = "{% static 'jquery.color-2.1.2.min.js' %}"></script>
+    <script type="text/javascript" src = "{% static 'garbage.js' %}"></script>
+		<link href = "{% static 'stylesheet.css'%}" rel = 'stylesheet'>
+    <title>Home</title>
+  </head>
+  <body>
+    <!-- <p>Hello World!</p> -->
+    <div id = 'pictures' class="">
+      {% include 'garbage/picture_div.html'%}
+    </div>
+  </body>
+</html>

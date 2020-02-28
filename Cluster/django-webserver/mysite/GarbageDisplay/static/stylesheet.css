@@ -1,0 +1,30 @@
+body {
+	background-color:#00bef7;
+}
+
+.food {
+	float:left;
+  width:950px;
+}
+
+.food .grade{ 
+	text-align: center;
+	font-size:200pt;
+  margin-block-start: 0em;
+	margin-block-end: 0em;
+	line-height:80%;
+	font-family: Georgia, Times, serif;
+	font-weight: bold;
+}
+.food img { 
+	display: block;
+  margin: 0 auto;
+	height: 90%;
+  width: 90%;
+}
+/* Clearfix (clear floats) */
+.food::after {
+	content: "";
+	clear: both;
+  display: inline;
+}
