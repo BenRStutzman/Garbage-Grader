@@ -21,7 +21,7 @@ def stream_photos(folder = photostream, filename = "", shutter = 10000,
 
     day = False
     batch = 0
-    
+
     while True:
         now = datetime.datetime.now()
         hours = now.hour + now.minute / 60
@@ -42,11 +42,11 @@ def stream_photos(folder = photostream, filename = "", shutter = 10000,
             if day:
                 day = False
             time.sleep(60)
-            
+
 
 
 def collect_garbage(num_to_leave = 10, folder = photostream, on_hours = on_hours):
-    
+
     while True:
         now = datetime.datetime.now()
         hours = now.hour + now.minute / 60
@@ -67,6 +67,3 @@ collector = threading.Thread(target = collect_garbage, kwargs = {})
 
 streamer.start()
 collector.start()
-        
-
-

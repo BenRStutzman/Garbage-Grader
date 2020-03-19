@@ -8,15 +8,19 @@ import sys
 photostream = "/home/pi/GarbageGrader/Data/photostream"
 food_folder = "/home/pi/GarbageGrader/Data/composites/food"
 other_folder = "/home/pi/GarbageGrader/Data/composites/other"
+#Ben_folder = 'Ben@10.6.21.20:C:/Users/Ben/Code/GarbageGraderData/RPiPics/Incoming'
+dest_folder = 'BenS@10.3.60.101:GarbageGrader/RPiPics/incoming'
 log = "/home/pi/GarbageGrader/Data/log.csv"
 on_hours = [6, 21]
 
 def save_composite(ident, out_folder, num_tiles = 4, inp_folder = photostream):
 
+    #start_time = time.time()
     buffer = []
     for file in os.scandir(inp_folder):
         if file.path[-1] != '~': # make sure it's not a hidden file
             buffer.append(file.path)
+    #print("check 1:", time.time() - start_time)
 
     paths = sorted(buffer, key = lambda path: int(path[len(inp_folder) + 1 : -4]),
                    reverse = True)
@@ -30,21 +34,37 @@ def save_composite(ident, out_folder, num_tiles = 4, inp_folder = photostream):
         finally:
             pic_num += 1
 
+    #print("check 2:", time.time() - start_time)
 
     # following 10ish lines are from glombard on github:
     # https://gist.github.com/glombard/7cd166e311992a828675
 
     composite = Image.new("RGB", (3200, 3200))
 
+    #print("check 2.5:", time.time() - start_time)
+
     for index, picture in enumerate(reversed(pictures)):
 
         x = index % 2 * 1600
         y = index // 2 * 1600
 
+        #composite.paste(picture)
+
         composite.paste(picture.crop((466, 0, 2066, 1600)),
                                     (x, y, x + 1600, y + 1600))
+    pic_path = str.format('%s/%06d.jpg' % (out_folder, ident))
 
-    composite.save(os.path.expanduser('%s/%06d.jpg' % (out_folder, ident)))
+    #print("check 3:", time.time() - start_time)
+
+    composite.save(pic_path)
+    
+    #print("check 3.5:", time.time() - start_time)
+    
+    if out_folder == food_folder:
+        response = os.system('scp ' + pic_path + ' ' + dest_folder + ' > /dev/null') #send to cluster
+
+    #print("check 4:", time.time() - start_time)
+    
     composite.close()
 
 def nice_date_time(year, month, day, hour, minute, second):
@@ -91,6 +111,7 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                 print(terminal_header)
             else: # already awake
                 ard_output = ser.readline().decode('utf-8').strip()
+                #print("Got a message!")
 
             if ard_output[0].isalpha(): # action from the arduino
                 # if already action waiting, stow it for later till it gets its number
@@ -101,7 +122,9 @@ def record_events(photo_folder, food_folder, other_folder, log, on_hours,
                 if action in ['food added', 'bin removed', 'scale reset', 'scales reset']:
                     ident += 1
                     out_folder = food_folder if action == 'food added' else other_folder
+                    #before = time.time()
                     save_composite(ident, out_folder) # save a picture
+                    #print(time.time() - before)
                 now = datetime.datetime.now()
             else: # numerical Arduino output
                 if action: # action waiting for number
@@ -229,6 +252,10 @@ def log_pics_and_weights(clear_logs, in_folder = photostream,
 
     record_events(in_folder, food_folder, other_folder, f, on_hours, prev_id)
 
+os.system('touch ' + log)
+
+while len(list(os.scandir(photostream))) < 10: #give the photostream time to start
+    time.sleep(5)
 
 if len(sys.argv) > 1 and sys.argv[1] == 'clear':
     clear_logs = True

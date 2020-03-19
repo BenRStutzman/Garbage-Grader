@@ -1,8 +1,10 @@
 pic_dir = '/home/BenS/GarbageGrader/RPiPics/'
 server_dir = ('/home/BenS/GarbageGrader/django-webserver/mysite/'
 	'GarbageDisplay/static/pictures/')
-model_dir = ('/home/BenS/GarbageGrader/NeuralNet/Production-Model/')
+model_dir = ('/home/BenS/GarbageGrader/NeuralNet/Production-Models/')
 log_path = ('/home/BenS/GarbageGrader/NeuralNet/log.csv')
+
+model_name = 'Sets_1-8_session-C.pkl' #The Neural Network, placed in model_dir
 
 import sys
 import fastai.vision as favi
@@ -36,8 +38,11 @@ def check_and_grade():
 
 						now = timezone.localtime(timezone.now())
 						grade, probs = grade_image(pic.path)
-						shutil.copy(pic.path, server_dir + pic.name)
+
+
+						# only send non-'N' grades to the webserver
 						if str(grade) != 'N':
+							shutil.copy(pic.path, server_dir + pic.name)
 							pic_to_db = Picture(name = pic.name,grade = grade, weight = 0, timestamp = now)
 							pic_to_db.save()
 
@@ -76,7 +81,7 @@ def check_and_grade():
 
 os.system('touch ' + log_path)
 
-learn = favi.load_learner(model_dir)
+learn = favi.load_learner(model_dir, file = model_name)
 
 while True:
     check_and_grade()

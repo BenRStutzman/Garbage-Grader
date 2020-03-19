@@ -14,7 +14,7 @@ const byte num_readings = 20; //how many readings at a time it averages
 const byte num_avgs = 20; //how many averages back it compares for a "delta"
 const int start_delay = 300; //startup time, in cycles, which are about 0.1 seconds
 const int dump_time = 1000; //time it waits before assuming a person's done dumping, in ms
-const float sensitivity = 0.020; //in kg, the lightest weight it will detect
+const float sensitivity = 0.010; //in kg, the lightest weight it will detect
 const float bin_weight = 10; //in kg
 const byte check_freq = 5; //in minutes, how often it checks the total weight of the scales
 
@@ -250,7 +250,7 @@ void loop() {
   last_avgs[counter % num_avgs] = avg;
   counter++;
   
-  //Serial.println(avg, 3);
+  /*Serial.println(delta, 3);
 
   /*
   //Stuff To print for diagnosis
