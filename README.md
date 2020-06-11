@@ -14,4 +14,4 @@ Overall layout
 Raspberry Pi recording pictures of each plate
 <br><br>
 ![alt text](https://raw.githubusercontent.com/BenRStutzman/garbage-grader/master/Pictures/three_plates_medium.gif)
-Example of TV displays as plates are scraped into the compost
+Example of TV display as plates are scraped into the compost
